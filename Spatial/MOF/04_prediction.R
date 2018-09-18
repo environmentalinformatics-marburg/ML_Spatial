@@ -1,27 +1,48 @@
 rm(list=ls())
 library(raster)
 library(sf)
+library(Orcs)
+
 
 mainpath <- "/home/hanna/Documents/Projects/SpatialCV/MOF/"
 datapath <- paste0(mainpath,"/data")
 rasterpath <- paste0(datapath,"/raster")
 vectorpath <- paste0(datapath,"/vector")
 modelpath <- paste0(datapath,"/modeldat")
+vispath <- paste0(mainpath,"/visualizations")
+predpath <- paste0(datapath,"/predictions")
 
-
+model_random <- get(load(paste0(modelpath,"/model_random.RData")))
+model_LLO <- get(load(paste0(modelpath,"/model_LLO.RData")))
+ffs_spatial <- get(load(paste0(modelpath,"/ffsmodel_LLO_final.RData")))
+ffs_random <- get(load(paste0(modelpath,"/FFS_random_final.RData")))
 
 predictors <- stack(paste0(rasterpath,"/predictors.grd"))
-prediction <- predict(predictors,model_random)
+prediction_random <- predict(predictors,model_random)
+prediction_LLO <- predict(predictors,model_LLO)
+prediction_ffs_sp <- predict(predictors,ffs_spatial)
+prediction_ffs_rnd <- predict(predictors,ffs_random)
 
 
-cols <- data.frame("Type_en"=c("Beech","Douglas fir","Field","Grassland","Larch",      
-                               "Oak","Road","Settlement","Spruce","Water"),
-                   "col"=c("forestgreen", "darkslategray", "beige","yellowgreen",
-                           "gold4","darkgreen","grey","white","khaki4",
-                           "blue"))
-spplot(prediction,maxpixels=99999,
-       col.regions=as.character(cols$col))
 
-writeRaster(prediction,paste0(rasterpath,"/model_random.grd"),overwrite=TRUE)
 
-plot(varImp(model_LLO))
+predictions <- stack(prediction_random,prediction_LLO,
+                     prediction_ffs_sp,prediction_ffs_rnd)
+
+names(predictions) <- c("noSelection_random","noSelection_LLO",
+                               "SpatialSelection","RandomSelection")
+
+writeRaster(predictions,paste0(predpath,"/predictions.grd"),overwrite=TRUE)
+
+predictions_filter <- predictions
+for (i in 1:nlayers(predictions)){
+  predictions_filter[[i]] <- focal(predictions[[i]],
+                                   w=matrix(1,nrow=3,ncol=3), fun=modal)
+  levels(predictions_filter[[i]])<-levels(predictions[[1]])
+  
+  }
+names(predictions_filter) <- c("noSelection_random","noSelection_LLO",
+                               "SpatialSelection","RandomSelection")
+
+writeRaster(predictions_filter,paste0(predpath,"/predictions_filter.grd"),overwrite=TRUE)
+

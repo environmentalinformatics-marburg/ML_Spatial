@@ -25,11 +25,12 @@ rename <- data.frame("Type_en"=c("Grassland","Water","Road","Settlement","Larch"
 
 training_sf<- merge(training_sf,rename,by.x="Type",by.y="de")
 
-cols <- data.frame("Type_en"=c("Beech","Douglas fir","Field","Grassland","Larch",      
-                            "Oak","Road","Settlement","Spruce","Water"),
-                   "col"=c("purple", "darkgreen", "beige","limegreen",
-                           "yellowgreen","brown","grey","white","forestgreen",
-                           "blue"))
+cols <-data.frame("Type_en"=c("Beech","Douglas Fir","Field","Grassland","Larch",      
+                                         "Oak","Road","Settlement","Spruce","Water"),
+                             "col"=c("brown4", "pink", "wheat","yellowgreen",
+                                     "lightcoral","yellow","grey50","red","purple",
+                                     "blue"))
+
 
 training_sf<- merge(training_sf,cols,by.x="Type_en",by.y="Type_en")
 training_sf$Type_en <- factor(training_sf$Type_en)

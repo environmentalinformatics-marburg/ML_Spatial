@@ -13,29 +13,41 @@ rasterpath <- paste0(datapath,"/raster")
 vectorpath <- paste0(datapath,"/vector")
 modelpath <- paste0(datapath,"/modeldat")
 
-models <- c("random","LLO","FFS_LLO","RFE_LLO","FFS_random")
+
+################################################################################
+# Settings
+################################################################################
+#models <- c("random","LLO","FFS_LLO","FFS_random","FFS_LLO_final","FFS_random_final")
+
 ncores <- 20
+k <- 20
+subset_p <- 0.75  #proportion of pixels used
+seed <- 100
 
-modeldata <- get(load(paste0(modelpath,"/modeldata.RData")))
-
-################################################################################
-#define predictors and response, make subset
-################################################################################
-set.seed(100)
-subset <- createDataPartition(modeldata$ID,p=0.75,list=FALSE)
-modeldata <- modeldata[subset[,1],]
 predictors <- c("red","green","blue","vvi","tgi","dem","slope","aspect",
-                "lat","lon","ngrdi","gli","pca","pca_3_sd","pca_5_sd","pca_9_sd",
-                paste0("dist_",
-                       c("topleft","bottomleft","bottomright","topright","center")))
+                "lat","lon","ngrdi","gli","pca","pca_3_sd","pca_5_sd","pca_9_sd"#,
+                # paste0("dist_",
+                #  c("topleft","bottomleft","bottomright","topright","center"))
+)
+################################################################################
+#define response, make subset
+################################################################################
+modeldata <- get(load(paste0(modelpath,"/modeldata_extended.RData")))
+
+if (subset_p!=1){
+  set.seed(seed)
+  subset <- createDataPartition(modeldata$ID,p=subset_p,list=FALSE)
+  modeldata <- modeldata[subset[,1],]
+}
+
 modeldata <- modeldata[complete.cases(modeldata[,which(names(modeldata)%in%predictors)]),]
 
 modeldata$Type <- factor(modeldata$Type)
 ################################################################################
 # define CV and tuning settings
 ################################################################################
-k <- length(unique(modeldata$spatialBlock))
-set.seed(100)
+#k <- length(unique(modeldata$spatialBlock))
+set.seed(seed)
 folds <- CreateSpacetimeFolds(modeldata,spacevar="spatialBlock",k=k)
 
 ctrl_random <- trainControl(method="cv",savePredictions = TRUE,returnResamp = "final",
@@ -43,14 +55,14 @@ ctrl_random <- trainControl(method="cv",savePredictions = TRUE,returnResamp = "f
 ctrl_LLO <- trainControl(method="cv",savePredictions = TRUE,returnResamp = "final",
                          index=folds$index)
 tuneGrid_ffs <- expand.grid(mtry = 2)
-tuneGrid <- expand.grid(mtry = seq(2,10,2))
+tuneGrid <- expand.grid(mtry = c(2,3,4,seq(6,length(predictors),2)))
 ################################################################################
 #Train models
 ################################################################################
 cl <- makeCluster(ncores)
 registerDoParallel(cl)
 if (any(models=="random")){
-  set.seed(100)
+  set.seed(seed)
   model_random <- train(modeldata[,which(names(modeldata)%in%predictors)],
                         modeldata$Type,
                         method="rf",metric="Kappa",
@@ -61,7 +73,7 @@ if (any(models=="random")){
   gc()
 }
 if (any(models=="LLO")){
-  set.seed(100)
+  set.seed(seed)
   model_LLO <- train(modeldata[,which(names(modeldata)%in%predictors)],
                      modeldata$Type,
                      method="rf",metric="Kappa",
@@ -73,7 +85,7 @@ if (any(models=="LLO")){
 }
 
 if (any(models=="FFS_LLO")){
-  set.seed(100)
+  set.seed(seed)
   ffsmodel_LLO <- ffs(modeldata[,which(names(modeldata)%in%predictors)],
                       modeldata$Type,
                       method="rf",metric="Kappa",
@@ -81,32 +93,75 @@ if (any(models=="FFS_LLO")){
                       trControl = ctrl_LLO)
   
   save(ffsmodel_LLO,file=paste0(modelpath,"/ffsmodel_LLO.RData"))
+  rm(ffsmodel_LLO)
+  gc()
+}
+
+if (any(models=="FFS_LLO_final")){
+  set.seed(seed)
+  load(paste0(modelpath,"/ffsmodel_LLO.RData"))
+  ffsmodel_LLO$LLO_final <- train(modeldata[,which(names(modeldata)%in%ffsmodel_LLO$selectedvars)],
+                                  modeldata$Type,
+                                  method="rf",metric="Kappa",
+                                  importance=TRUE,tuneGrid = tuneGrid,
+                                  trControl = ctrl_LLO)
+  ffsmodel_LLO$random_final <- train(modeldata[,which(names(modeldata)%in%ffsmodel_LLO$selectedvars)],
+                                     modeldata$Type,
+                                     method="rf",metric="Kappa",
+                                     importance=TRUE,tuneGrid = tuneGrid,
+                                     trControl = ctrl_random)
+  save(ffsmodel_LLO,file=paste0(modelpath,"/ffsmodel_LLO_final.RData"))
+  rm(ffsmodel_LLO)
+  gc()
 }
 
 if (any(models=="FFS_random")){
-  set.seed(100)
-  FFS_random <- ffs(modeldata[,which(names(modeldata)%in%predictors)],
-                    modeldata$Type,
-                    method="rf",metric="Kappa",
-                    tuneGrid = tuneGrid_ffs,
-                    trControl = ctrl_random)
+  set.seed(seed)
+  ffsmodel_random <- ffs(modeldata[,which(names(modeldata)%in%predictors)],
+                         modeldata$Type,
+                         method="rf",metric="Kappa",
+                         tuneGrid = tuneGrid_ffs,
+                         trControl = ctrl_random)
   
-  save(FFS_random,file=paste0(modelpath,"/FFS_random.RData"))
+  save(ffsmodel_random,file=paste0(modelpath,"/ffsmodel_random.RData"))
+  rm(ffsmodel_random)
+  gc()
 }
+
+if (any(models=="FFS_random_final")){
+  set.seed(seed)
+  load(paste0(modelpath,"/ffsmodel_random.RData"))
+  ffsmodel_random$LLO_final <- train(modeldata[,which(names(modeldata)%in%ffsmodel_random$selectedvars)],
+                                     modeldata$Type,
+                                     method="rf",metric="Kappa",
+                                     importance=TRUE,tuneGrid = tuneGrid,
+                                     trControl = ctrl_LLO)
+  ffsmodel_random$random_final <- train(modeldata[,which(names(modeldata)%in%ffsmodel_random$selectedvars)],
+                                        modeldata$Type,
+                                        method="rf",metric="Kappa",
+                                        importance=TRUE,tuneGrid = tuneGrid,
+                                        trControl = ctrl_random)
+  save(ffsmodel_random,file=paste0(modelpath,"/ffsmodel_random_final.RData"))
+  rm(ffsmodel_random)
+  gc()
+}
+
 
 
 if (any(models=="RFE_LLO")){
-  set.seed(100)
+  rtrl_LLO <- ctrl_LLO
+  rtrl_LLO$functions = caretFuncs
+  set.seed(seed)
   rfemodel_LLO <- rfe(modeldata[,which(names(modeldata)%in%predictors)],
                       modeldata$Type,
-                      sizes = 2:length(predictors),
+                      sizes = c(2:6,seq(8,length(predictors),2)),
                       method="rf",metric="Kappa",
-                      tuneGrid = tuneGrid,
-                      trControl = ctrl_LLO)
+                      tuneGrid = tuneGrid_ffs,
+                      rfeControl = rtrl_LLO,
+                      trControl=trainControl(method="cv"))
   
   save(rfemodel_LLO,file=paste0(modelpath,"/rfemodel_LLO.RData"))
 }
-
 
 stopCluster(cl)
 warnings()

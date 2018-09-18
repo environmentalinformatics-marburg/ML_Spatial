@@ -5,7 +5,7 @@ datapath <- paste0(mainpath,"/data")
 rasterpath <- paste0(datapath,"/raster")
 
 aerial <- stack(paste0(rasterpath,"/geonode_ortho_muf_1m.tif"))
-names(aerial) <- c("blue","green","red")
+names(aerial) <- c("red","green","blue")  #Achtung! red/blue vertauscht!!
 dem <- raster(paste0(rasterpath,"/geonode_lidar_dem_01m.tif"))
 names(dem) <- "dem"
 vvi <- raster(paste0(rasterpath,"/geonode_ortho_muf_vvi.tif"))
@@ -45,8 +45,8 @@ distances[[i]] <- distanceFromPoints(aerial[[1]], spp[i,])
 distances <- stack(distances)
 lat <- distances[[1]]
 lon <- distances[[1]]
-values(lat)<- coordinates(lat)[,1]
-values(lon)<- coordinates(lon)[,2]
+values(lat)<- coordinates(lat)[,2]
+values(lon)<- coordinates(lon)[,1]
 
 names(distances)<- paste0("dist_",c("topleft","bottomleft","bottomright","topright","center"))
 distances$lat <- lat

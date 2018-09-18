@@ -10,7 +10,8 @@ modelpath <- paste0(datapath,"/modeldat")
 
 
 predictors <- stack(paste0(rasterpath,"/predictors.grd"))
-training_sf <- shapefile(paste0(vectorpath,"/lcc_training_areas_20180126.shp"))
+training_sf <- shapefile(paste0(vectorpath,"/lcc_training_areas_20180126_extended.shp"))
+
 training_sf$ID <- 1:nrow(training_sf)
 
 
@@ -42,4 +43,4 @@ Spblock_extr <- extract(spatialBlock_res,training_sf,df=TRUE,fun=median)
 training_df <- merge(training_df,Spblock_extr,by.x="ID",by.y="ID")
   
 
-save(training_df,file=paste0(modelpath,"/modeldata.RData"))
+save(training_df,file=paste0(modelpath,"/modeldata_extended.RData"))
