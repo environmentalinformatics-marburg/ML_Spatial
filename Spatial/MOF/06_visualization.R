@@ -16,10 +16,11 @@ predictions_filter <- stack(paste0(predpath,"/predictions_filter.grd"))
 model_random <- get(load(paste0(modelpath,"/model_random.RData")))
 
 predictions_filter <-predictions_filter[[which(names(predictions_filter)%in%c(
-  "noSelection_random","SpatialSelection","RandomSelection"))]]
+  "noSelection_random","SpatialSelection","RandomSelection","RFE"))]]
 names(predictions_filter)[which(names(predictions_filter)=="noSelection_random")]<- "noSelection"
 #reorder:
-predictions_filter <- stack(predictions_filter$noSelection,predictions_filter$RandomSelection,
+predictions_filter <- stack(predictions_filter$noSelection,
+                            predictions_filter$RandomSelection,
                             predictions_filter$SpatialSelection)
 
 for (i in 1:nlayers(predictions_filter)){
@@ -60,7 +61,7 @@ p_fig <- spplot(predictions_filter,maxpixels=9999999,
                 scales=list(draw=FALSE),
                 par.settings = list(strip.background=list(col="lightgrey")),
                 col.regions=as.character(cols_df$col),
-                names.attr=c("no selection", "random selection", 
+                names.attr=c("no selection", "random selection",
                                           "spatial selection"))
 
 P_cbn <- latticeCombineGrid(list(p1,p_fig),layout=c(2,2))

@@ -3,6 +3,7 @@ library(raster)
 library(sf)
 library(caret)
 library(randomForest)
+library(Rsenal)
 
 
 mainpath <- "/home/hanna/Documents/Projects/SpatialCV/MOF/"
@@ -15,9 +16,11 @@ vispath <- paste0(mainpath,"/visualizations")
 model_random <- get(load(paste0(modelpath,"/model_random.RData")))
 model_LLO <- get(load(paste0(modelpath,"/model_LLO.RData")))
 model_ffs_LLO <- get(load(paste0(modelpath,"/ffsmodel_LLO_final.RData")))
-model_ffs_random <- get(load(paste0(modelpath,"/FFS_random_final.RData")))
+model_ffs_random <- get(load(paste0(modelpath,"/ffsmodel_random_final.RData")))
+model_rfe <- get(load(paste0(modelpath,"/rfemodel_final.RData")))
 
-modeldata <- get(load(paste0(modelpath,"/modeldata.RData")))
+
+modeldata <- get(load(paste0(modelpath,"/modeldata_extended.RData")))
 
 
 ################################################################################
@@ -43,16 +46,35 @@ boxplot(kia_random,kia_LLO)
 
 
 ##############################valid global
-ffspreds <- ffsmodel_LLO$LLO_final$pred[
+ffs_sp_sp <- ffsmodel_LLO$LLO_final$pred[
   ffsmodel_LLO$LLO_final$pred$mtry==ffsmodel_LLO$LLO_final$bestTune$mtry,]
+
+ffs_sp_random <- ffsmodel_LLO$random_final$pred[
+  ffsmodel_LLO$random_final$pred$mtry==ffsmodel_LLO$random_final$bestTune$mtry,]
+
+ffs_random_random <- model_ffs_random$random_final$pred[
+  model_ffs_random$random_final$pred$mtry==model_ffs_random$random_final$bestTune$mtry,]
+
+ffs_random_sp <- ffsmodel_random$LLO_final$pred[
+  ffsmodel_random$LLO_final$pred$mtry==ffsmodel_random$LLO_final$bestTune$mtry,]
+
+rfe_spatial <- model_rfe$LLO_final$pred[
+  model_rfe$LLO_final$pred$mtry==model_rfe$LLO_final$bestTune$mtry,]
 
 fullmodelpreds <- model_LLO$pred[
   model_LLO$pred$mtry==model_LLO$bestTune$mtry,]
 
 
-ffstable <- table(ffspreds$pred,ffspreds$obs)
-sum(diag(ffstable))/sum(ffstable)
-kia_ffs <-kstat(ffspreds$pred,ffspreds$obs)
+
+
+ffstable_sp_sp <- table(ffs_sp_sp$pred,ffs_sp_sp$obs)
+sum(diag(ffstable_sp_sp))/sum(ffstable_sp_sp)
+kia_ffs_sp_sp <-kstat(ffs_sp_sp$pred,ffs_sp_sp$obs)
+
+
+rfetable <- table(rfe_spatial$pred,rfe_spatial$obs)
+sum(diag(rfetable))/sum(rfetable)
+kia_rfe <-kstat(rfe_spatial$pred,rfe_spatial$obs)
 
 
 fullmodeltable <- table(fullmodelpreds$pred,fullmodelpreds$obs)

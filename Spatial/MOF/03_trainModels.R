@@ -17,10 +17,10 @@ modelpath <- paste0(datapath,"/modeldat")
 ################################################################################
 # Settings
 ################################################################################
-#models <- c("random","LLO","FFS_LLO","FFS_random","FFS_LLO_final","FFS_random_final")
-
+models <- c("random","LLO","FFS_LLO","FFS_random","FFS_LLO_final","FFS_random_final",
+            "RFE_LLO")
 ncores <- 20
-k <- 20
+k <- 20 # 20 spatial blocks
 subset_p <- 0.75  #proportion of pixels used
 seed <- 100
 
@@ -149,8 +149,13 @@ if (any(models=="FFS_random_final")){
 
 
 if (any(models=="RFE_LLO")){
-  rtrl_LLO <- ctrl_LLO
-  rtrl_LLO$functions = caretFuncs
+  rtrl_LLO <- rfeControl(functions = caretFuncs,
+                         index=ctrl_LLO$index[c(2:20)],
+                         indexOut=ctrl_LLO$indexOut[c(2:20)])
+  #prob with fold 1 because it is the only one containing larch. NA causes prob here.
+  #automatically ignored in train &ffs. manually solved here by removing fold 1.
+  
+  
   set.seed(seed)
   rfemodel_LLO <- rfe(modeldata[,which(names(modeldata)%in%predictors)],
                       modeldata$Type,
@@ -158,9 +163,23 @@ if (any(models=="RFE_LLO")){
                       method="rf",metric="Kappa",
                       tuneGrid = tuneGrid_ffs,
                       rfeControl = rtrl_LLO,
-                      trControl=trainControl(method="cv"))
-  
+                      trControl=trainControl(method="none"))
   save(rfemodel_LLO,file=paste0(modelpath,"/rfemodel_LLO.RData"))
+  
+  rfemodel_LLO$LLO_final <- train(modeldata[,which(names(modeldata)%in%rfemodel_LLO$optVariables)],
+                                  modeldata$Type,
+                                  method="rf",metric="Kappa",
+                                  importance=TRUE,tuneGrid = tuneGrid,
+                                  trControl = ctrl_LLO)
+  rfemodel_LLO$random_final <- train(modeldata[,which(names(modeldata)%in%rfemodel_LLO$optVariables)],
+                                     modeldata$Type,
+                                     method="rf",metric="Kappa",
+                                     importance=TRUE,tuneGrid = tuneGrid,
+                                     trControl = ctrl_random)
+  save(rfemodel_LLO,file=paste0(modelpath,"/rfemodel_final.RData"))
+  
+  
+  
 }
 
 stopCluster(cl)

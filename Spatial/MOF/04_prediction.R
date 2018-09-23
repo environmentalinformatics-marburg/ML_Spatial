@@ -15,22 +15,23 @@ predpath <- paste0(datapath,"/predictions")
 model_random <- get(load(paste0(modelpath,"/model_random.RData")))
 model_LLO <- get(load(paste0(modelpath,"/model_LLO.RData")))
 ffs_spatial <- get(load(paste0(modelpath,"/ffsmodel_LLO_final.RData")))
-ffs_random <- get(load(paste0(modelpath,"/FFS_random_final.RData")))
-
+ffs_random <- get(load(paste0(modelpath,"/ffsmodel_random_final.RData")))
+rfe_spatial <- get(load(paste0(modelpath,"/rfemodel_LLO.RData")))
 predictors <- stack(paste0(rasterpath,"/predictors.grd"))
 prediction_random <- predict(predictors,model_random)
 prediction_LLO <- predict(predictors,model_LLO)
 prediction_ffs_sp <- predict(predictors,ffs_spatial)
 prediction_ffs_rnd <- predict(predictors,ffs_random)
-
-
+prediction_rfe <- predict(predictors,rfe_spatial)
 
 
 predictions <- stack(prediction_random,prediction_LLO,
-                     prediction_ffs_sp,prediction_ffs_rnd)
+                     prediction_ffs_sp,prediction_ffs_rnd,
+                     prediction_rfe)
 
 names(predictions) <- c("noSelection_random","noSelection_LLO",
-                               "SpatialSelection","RandomSelection")
+                               "SpatialSelection","RandomSelection",
+                        "RFE")
 
 writeRaster(predictions,paste0(predpath,"/predictions.grd"),overwrite=TRUE)
 
@@ -42,7 +43,7 @@ for (i in 1:nlayers(predictions)){
   
   }
 names(predictions_filter) <- c("noSelection_random","noSelection_LLO",
-                               "SpatialSelection","RandomSelection")
+                               "SpatialSelection","RandomSelection","RFE")
 
 writeRaster(predictions_filter,paste0(predpath,"/predictions_filter.grd"),overwrite=TRUE)
 
