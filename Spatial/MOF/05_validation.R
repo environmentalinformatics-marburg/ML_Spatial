@@ -4,6 +4,7 @@ library(sf)
 library(caret)
 library(randomForest)
 library(Rsenal)
+library(CAST)
 
 
 mainpath <- "/home/hanna/Documents/Projects/SpatialCV/MOF/"
@@ -37,6 +38,14 @@ cairo_pdf(paste0(vispath,"/varimp_full.pdf"), width=6,height=5)
 varImpPlot(model_random$finalModel,col="black",main="",scale=T,type=1)
 dev.off()
 
+plot_ffs(ffsmodel_LLO)
+ffsmodel_LLO$selectedvars
+ffsmodel_LLO$selectedvars_perf
+varperf <-max(ffsmodel_LLO$selectedvars_perf)-ffsmodel_LLO$selectedvars_perf
+#varperf <- scale(varperf,0,100,center=FALSE)
+varperf <- rescale(varperf, to = c(0, 100))
+barplot(varperf,
+        horiz=T)
 ################################################################################
 #Compare
 ################################################################################
@@ -61,7 +70,7 @@ ffs_random_sp <- ffsmodel_random$LLO_final$pred[
 rfe_spatial <- model_rfe$LLO_final$pred[
   model_rfe$LLO_final$pred$mtry==model_rfe$LLO_final$bestTune$mtry,]
 
-fullmodelpreds <- model_LLO$pred[
+full_spatial <- model_LLO$pred[
   model_LLO$pred$mtry==model_LLO$bestTune$mtry,]
 
 
@@ -71,12 +80,16 @@ ffstable_sp_sp <- table(ffs_sp_sp$pred,ffs_sp_sp$obs)
 sum(diag(ffstable_sp_sp))/sum(ffstable_sp_sp)
 kia_ffs_sp_sp <-kstat(ffs_sp_sp$pred,ffs_sp_sp$obs)
 
+ffstable_random_sp <- table(ffs_random_sp$pred,ffs_random_sp$obs)
+sum(diag(ffstable_random_sp))/sum(ffstable_random_sp)
+kia_ffs_random_sp <-kstat(ffs_random_sp$pred,ffs_random_sp$obs)
+
 
 rfetable <- table(rfe_spatial$pred,rfe_spatial$obs)
 sum(diag(rfetable))/sum(rfetable)
 kia_rfe <-kstat(rfe_spatial$pred,rfe_spatial$obs)
 
 
-fullmodeltable <- table(fullmodelpreds$pred,fullmodelpreds$obs)
-sum(diag(fullmodeltable))/sum(fullmodeltable)
+full_spatial_table <- table(full_spatial$pred,full_spatial$obs)
+sum(diag(full_spatial_table))/sum(full_spatial_table)
 kia_full <-kstat(fullmodelpreds$pred,fullmodelpreds$obs)

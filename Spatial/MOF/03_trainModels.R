@@ -53,7 +53,7 @@ folds <- CreateSpacetimeFolds(modeldata,spacevar="spatialBlock",k=k)
 ctrl_random <- trainControl(method="cv",savePredictions = TRUE,returnResamp = "final",
                             number=k)
 ctrl_LLO <- trainControl(method="cv",savePredictions = TRUE,returnResamp = "final",
-                         index=folds$index)
+                         index=folds$index,indexOut=folds$indexOut)
 tuneGrid_ffs <- expand.grid(mtry = 2)
 tuneGrid <- expand.grid(mtry = c(2,3,4,seq(6,length(predictors),2)))
 ################################################################################
