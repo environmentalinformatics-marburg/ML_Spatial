@@ -16,7 +16,7 @@ model_random <- get(load(paste0(modelpath,"/LAI_model_random.RData")))
 model_LLO <- get(load(paste0(modelpath,"/LAI_model_LLO.RData")))
 ffs_spatial <- get(load(paste0(modelpath,"/LAI_ffsmodel_LLO_final.RData")))
 ffs_random <- get(load(paste0(modelpath,"/LAI_ffsmodel_random_final.RData")))
-rfe_spatial <- get(load(paste0(modelpath,"/LAI_rfemodel_LLO.RData")))
+rfe_spatial <- get(load(paste0(modelpath,"/LAI_rfemodel_final.RData")))
 predictors <- stack(paste0(rasterpath,"/LAI_predictors.grd"))
 
 
@@ -35,12 +35,12 @@ names(predictions) <- c("noSelection_random","noSelection_LLO",
                         "SpatialSelection","RandomSelection",
                         "RFE")
 
-forestmask <- raster(paste0(rasterpath,"/Tree_type_raster.tif"))
-forestmask <- reclassify(forestmask,c(-999,9999,1))
-forestmask <- resample(forestmask,predictions)
-predictions <- crop(predictions,forestmask)
-predictions <- mask(predictions,forestmask)
-predictions <- crop(predictions,c(475915.9,478539.2,5630772,5632976))
+#forestmask <- raster(paste0(rasterpath,"/Tree_type_raster.tif"))
+#forestmask <- reclassify(forestmask,c(-999,9999,1))
+#forestmask <- resample(forestmask,predictions)
+#predictions <- crop(predictions,forestmask)
+#predictions <- mask(predictions,forestmask)
+#predictions <- crop(predictions,c(475915.9,478539.2,5630772,5632976))
 
 writeRaster(predictions,paste0(predpath,"/LAI_predictions.grd"),overwrite=TRUE)
 

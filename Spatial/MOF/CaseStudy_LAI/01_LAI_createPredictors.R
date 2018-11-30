@@ -1,3 +1,4 @@
+# script takes a sentinel stack and LAI polygon as input data.
 
 rm(list=ls())
 library(raster)
@@ -12,7 +13,7 @@ modelpath <- paste0(datapath,"/modeldat")
 
 sen <- list.files(paste0(rasterpath,"/s2_20170510jp2/"),full.names = FALSE)
 Lidarprop <- shapefile(paste0(vectorpath,"/LAI_sampling.shp"))
-cluster <- shapefile(paste0(vectorpath,"/cluster_centroids.shp"))
+cluster <- shapefile(paste0(vectorpath,"/cluster_centroids_new.shp"))
 dem <- raster(paste0(rasterpath,"/geonode_lidar_dem_01m.tif"))
 names(dem) <- "dem"
 
@@ -71,14 +72,14 @@ writeRaster(predictors,paste0(rasterpath,"/LAI_predictors.grd"),overwrite=TRUE)
 template <- predictors[[1]]
 values(template )<- NA
 #lidar_lai_raster <- rasterize( Lidarprop,template, 'LAI',fun=mean) 
-lidar_lai_raster <- rasterize( Lidarprop,template, 'chmHeight',fun=mean) 
+lidar_lai_raster <- rasterize( Lidarprop,template, 'LAI',fun=mean) 
 writeRaster(lidar_lai_raster,paste0(rasterpath,"/LIDAR_LAI.grd"),
             overwrite=TRUE)
 lidar_lai_raster <- stack(lidar_lai_raster,lat,lon)
 
 
 cluster <- cluster[,-which(names(cluster)=="id")]
-cluster_buffer <-  gBuffer(cluster,width=40,byid = TRUE) 
+cluster_buffer <-  gBuffer(cluster,width=60,byid = TRUE) 
 
 lai_extractes <- extract(lidar_lai_raster,cluster_buffer,df=TRUE)
 names(lai_extractes)<-c("Cluster","LAI","lat","lon")

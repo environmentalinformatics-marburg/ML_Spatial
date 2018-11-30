@@ -20,24 +20,28 @@ modelpath <- paste0(datapath,"/modeldat")
 models <- c("random","LLO","FFS_LLO","FFS_random","FFS_LLO_final","FFS_random_final",
             "RFE_LLO")
 ncores <- 3
-k <- 15 # 14 cluster
 seed <- 100
+k <- "all"
+#es klappt k=5, width=40
 
 predictors <- c("T32UMB_20170510T103031_B02","T32UMB_20170510T103031_B03",
                 "T32UMB_20170510T103031_B04","T32UMB_20170510T103031_B08",
                 "T32UMB_20170510T103031_B05","T32UMB_20170510T103031_B06",
                 "T32UMB_20170510T103031_B07","T32UMB_20170510T103031_B11",
                 "T32UMB_20170510T103031_B12","T32UMB_20170510T103031_B8A",
-                "dem","slope","aspect","lat","lon")
+                "dem","slope","aspect","lat","lon")#,
+                #"dist_topleft","dist_bottomleft","dist_bottomright",
+                #"dist_center")
 
 ################################################################################
 #define response, make subset
 ################################################################################
 modeldata <- get(load(paste0(modelpath,"/modeldata.RData")))
-
-
 modeldata <- modeldata[complete.cases(modeldata[,which(names(modeldata)%in%predictors)]),]
 
+if (k=="all"){
+k <- length(unique(modeldata$Cluster))
+}
 ################################################################################
 # define CV and tuning settings
 ################################################################################
